@@ -7,6 +7,7 @@ A modern, cyberpunk-themed portfolio website featuring glassmorphism effects, te
 ![Desktop Screenshot](screenshots/desktop-view.png)
 *Glassmorphic portfolio with terminal animations*
 ![](screenshots/desktop-view(about-section).png)
+![](screenshots/desktop-view(tech-stack-section).png)
 ![](screenshots/desktop-view(projects-section).png)
 ![](screenshots/desktop-view(certiications-section).png)
 ![](screenshots/desktop-view(contact-section).png)
