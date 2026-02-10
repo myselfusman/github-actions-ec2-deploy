@@ -43,7 +43,7 @@ On the EC2 server, deployments follow this structure:
 ```
 
 * Each deployment creates a new timestamped directory
-* The `current` symlink always points to the active version
+* The `current` symlink always points to the active version.
 
 ---
 
