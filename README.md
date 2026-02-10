@@ -1,6 +1,6 @@
 # Next.js EC2 Deployment with GitHub Actions
 
-This repository demonstrates how to deploy a Next.js application to an EC2 (VPS) server using **GitHub Actions**, **SSH**, and an **atomic release strategy**.
+This repository demonstrates how to deploy a Next.js application to an EC2/VPS server using **GitHub Actions**, **SSH**, and an **atomic release strategy**.
 
 The purpose of this project is to build a real-world CI/CD deployment pipeline similar to what is commonly used in production environments.
 
