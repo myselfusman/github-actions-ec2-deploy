@@ -1,91 +1,49 @@
-<<<<<<< HEAD
-name: Auto SSH Test on Push
-=======
-name: Deploy to VPS via SSH
->>>>>>> bae01b4 (Changes)
+name: Deploy Release (Manual Activate)
 
 on:
   push:
     branches:
-<<<<<<< HEAD
-      - main  # jab bhi main branch me push ho, workflow run hoga
-
-jobs:
-  ssh-test:
-    runs-on: ubuntu-latest
-
-    steps:
-=======
-      - main  # triggers on push to main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repo
-      - name: Checkout Repository
+      # 1️⃣ Checkout Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup SSH key
->>>>>>> bae01b4 (Changes)
-      - name: Setup SSH Key
+      # 2️⃣ Setup SSH
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-<<<<<<< HEAD
-      - name: Test SSH Connection
+      # 3️⃣ Create Release Directory
+      - name: Create Release
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            echo 'SSH Connection Successful'
-            hostname
-            whoami
-            echo 'Server ready for deployment test'
-=======
-      # 3️⃣ Deploy via SSH
-      - name: Deploy to Server
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            set -e
+          RELEASE_NAME=$(date +'%Y%m%d%H%M%S')
+          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
 
-            echo 'Connected to server'
-
-            # Directories
-            APP_DIR='/var/www/app'
-            RELEASES_DIR=\"\$APP_DIR/releases\"
-            CURRENT_DIR=\"\$APP_DIR/current\"
-            TIMESTAMP=\$(date +'%Y%m%d%H%M%S')
-            NEW_RELEASE_DIR=\"\$RELEASES_DIR/\$TIMESTAMP\"
-
-            # Create releases dir if missing
-            mkdir -p \$RELEASES_DIR
-            mkdir -p \$NEW_RELEASE_DIR
-
-            echo 'Starting rsync deployment...'
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            mkdir -p /var/www/app/releases/$RELEASE_NAME
           "
 
-          # Rsync code to the new release folder
-          rsync -az --delete --exclude='.git' ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/app/releases/${{ github.run_id }}/
+      # 4️⃣ Rsync Code to New Release
+      - name: Rsync Files
+        run: |
+          rsync -az --delete \
+            --exclude='.git' \
+            ./ \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/app/releases/${{ env.RELEASE_NAME }}/
 
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            set -e
-
-            RELEASES_DIR='/var/www/app/releases'
-            CURRENT_DIR='/var/www/app/current'
-
-            # Symlink current to new release
-            ln -sfn \$RELEASES_DIR/${{ github.run_id }} \$CURRENT_DIR
-
-            # Restart service
-            sudo systemctl restart myapp
-
-            echo 'Deployment complete. Current release: \$CURRENT_DIR'
-
-            # Keep only last 5 releases
-            cd \$RELEASES_DIR
-            ls -1dt */ | tail -n +6 | xargs -r rm -rf
-            echo 'Old releases cleaned up, keeping last 5.'
->>>>>>> bae01b4 (Changes)
-          "
+      # 5️⃣ Show Release Info (No Switch Yet)
+      - name: Deployment Completed
+        run: |
+          echo "Release created:"
+          echo "/var/www/app/releases/${{ env.RELEASE_NAME }}"
+          echo "To activate manually run:"
+          echo "ln -sfn /var/www/app/releases/${{ env.RELEASE_NAME }} /var/www/app/current"
