@@ -3,7 +3,7 @@ name: Auto SSH Deploy on Push
 on:
   push:
     branches:
-      - main   # jab bhi main branch me push ho
+      - main
 
 jobs:
   ssh-deploy:
@@ -15,27 +15,39 @@ jobs:
 
       - name: Setup SSH Key and Deploy
         run: |
-          # Create .ssh directory if it doesn't exist
+          set -x  # Show all commands
+
+          # Create .ssh directory
           mkdir -p ~/.ssh
-          
+
           # Write SSH private key from secrets
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          
-          # Set correct permissions for the key
           chmod 600 ~/.ssh/id_rsa
 
-          # Add host to known_hosts to avoid prompts
+          # Add server to known_hosts to avoid prompt
           touch ~/.ssh/known_hosts
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-          # SSH into server and run deployment commands
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          # SSH into server and deploy
+          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             echo 'SSH Connection Successful'
             hostname
             whoami
-            cd /home || exit 1
+
+            # Ensure app directory exists
+            APP_DIR='/var/www/app'
+            if [ ! -d \"\$APP_DIR\" ]; then
+              echo \"\$APP_DIR does not exist. Exiting.\"
+              exit 1
+            fi
+            cd \$APP_DIR
+
+            # Update repo safely
             git fetch origin
             git reset --hard origin/main
-            sudo systemctl restart myapp
+
+            # Restart service
+            sudo systemctl restart myapp || { echo 'Service restart failed'; exit 1; }
+
             echo 'Deployment Complete'
           "
