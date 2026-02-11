@@ -1,27 +1,41 @@
-name: Test SSH Connection
+name: Auto SSH Deploy on Push
 
 on:
-  workflow_dispatch: # Manual trigger
+  push:
+    branches:
+      - main   # jab bhi main branch me push ho
 
 jobs:
-  ssh-test:
+  ssh-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Test SSH manually
+      - name: Setup SSH Key and Deploy
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          # Create .ssh directory if it doesn't exist
+          mkdir -p ~/.ssh
           
-          # Disable strict host key checking for test
+          # Write SSH private key from secrets
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          
+          # Set correct permissions for the key
+          chmod 600 ~/.ssh/id_rsa
+
+          # Add host to known_hosts to avoid prompts
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+          # SSH into server and run deployment commands
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             echo 'SSH Connection Successful'
             hostname
             whoami
-            cd /var/www/app
+            cd /var/www/app || exit 1
             git fetch origin
             git reset --hard origin/main
-            echo 'Deployment Test Complete'
+            sudo systemctl restart myapp
+            echo 'Deployment Complete'
           "
