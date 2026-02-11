@@ -1,4 +1,4 @@
-name: Deploy to Server
+name: Deploy to VPS
 
 on:
   push:
@@ -10,17 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 15m
+          debug: true
           script: |
-            echo "I am on server"
+            echo "Connected to server"
             cd /var/www/app
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             sudo systemctl restart myapp
+            echo "Deployment completed"
