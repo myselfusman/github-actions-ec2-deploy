@@ -1,7 +1,9 @@
-name: Test SSH Connection Only
+name: Auto SSH Test on Push
 
 on:
-  workflow_dispatch:  # manual trigger
+  push:
+    branches:
+      - main  # jab bhi main branch me push ho, workflow run hoga
 
 jobs:
   ssh-test:
