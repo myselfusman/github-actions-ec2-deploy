@@ -1,29 +1,27 @@
-name: Deploy to VPS
+name: Test SSH Connection
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch: # Manual trigger
 
 jobs:
-  deploy:
+  ssh-test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          timeout: 60s
-          command_timeout: 15m
-          debug: true
-          script: |
-            echo "Connected to server"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test SSH manually
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          # Disable strict host key checking for test
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            echo 'SSH Connection Successful'
+            hostname
+            whoami
             cd /var/www/app
             git fetch origin
             git reset --hard origin/main
-            sudo systemctl restart myapp
-            echo "Deployment completed"
+            echo 'Deployment Test Complete'
+          "
