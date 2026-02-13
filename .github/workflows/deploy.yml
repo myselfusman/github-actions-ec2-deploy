@@ -1,4 +1,4 @@
-name: Deploy Release (Auto Activate)
+name: Deploy to EC2
 
 on:
   push:
@@ -9,64 +9,63 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      RELEASE_NAME: ${{ github.run_id }}
+
     steps:
-      # 1️⃣ Checkout Code
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup SSH
+      # -----------------------------
+      # 1️⃣ Install dependencies
+      # -----------------------------
+      - name: Install dependencies
+        run: npm install
+
+      # -----------------------------
+      # 2️⃣ Build Next.js
+      # -----------------------------
+      - name: Build Next.js app
+        run: npm run build
+
+      # -----------------------------
+      # 3️⃣ Setup SSH
+      # -----------------------------
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      # 3️⃣ Create Release Directory
-      - name: Create Release
+      # -----------------------------
+      # 4️⃣ Create release folder
+      # -----------------------------
+      - name: Create release directory on EC2
         run: |
-          RELEASE_NAME=$(date +'%Y%m%d%H%M%S')
-          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            mkdir -p /var/www/app/releases/$RELEASE_NAME
+            mkdir -p /var/www/app/releases/${{ env.RELEASE_NAME }}
           "
 
-      # 4️⃣ Rsync Code to New Release
-      - name: Rsync Files
+      # -----------------------------
+      # 5️⃣ Upload built app
+      # -----------------------------
+      - name: Upload files via rsync
         run: |
           rsync -az --delete \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            ./ \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/app/releases/${{ env.RELEASE_NAME }}/
+            --exclude=".git" \
+            node_modules \
+            .next \
+            package.json \
+            public \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/app/releases/${{ env.RELEASE_NAME }}
 
-      # 5️⃣ Build, Activate Symlink, Restart App
-      - name: Build & Activate Release
+      # -----------------------------
+      # 6️⃣ Activate release
+      # -----------------------------
+      - name: Activate new release
         run: |
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            set -e
-            cd /var/www/app/releases/${{ env.RELEASE_NAME }}
-
-            echo 'Installing dependencies...'
-            npm install --production
-
-            echo 'Building Next.js app...'
-            npm run build
-
-            echo 'Switching symlink to new release...'
-            ln -sfn /var/www/app/releases/${{ env.RELEASE_NAME }} /var/www/app/current
-
-            echo 'Restarting app with PM2...'
+            ln -sfn /var/www/app/releases/${{ env.RELEASE_NAME }} /var/www/app/current &&
             pm2 restart myapp || pm2 start npm --name myapp -- start
-
-            echo 'Deployment finished successfully'
-          "
-
-      # 6️⃣ Cleanup Old Releases (keep last 5)
-      - name: Cleanup Old Releases
-        run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            cd /var/www/app/releases
-            ls -1dt */ | tail -n +6 | xargs rm -rf
           "
