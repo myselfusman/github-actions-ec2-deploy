@@ -1,97 +1,245 @@
-# Next.js EC2 Deployment with GitHub Actions
+# 🚀 Production-Grade Next.js CI/CD Deployment to EC2
 
-This repository demonstrates how to deploy a Next.js application to an EC2/VPS server using **GitHub Actions**, **SSH**, and an **atomic release strategy**.
+This repository contains a complete production-style CI/CD pipeline for deploying a **Next.js application** to an **AWS EC2 (Ubuntu) server** using GitHub Actions.
 
-The purpose of this project is to build a real-world CI/CD deployment pipeline similar to what is commonly used in production environments.
-
----
-
-## 🚀 What this repository does
-
-* Automatically deploys code on every push to the `main` branch using **GitHub Actions**
-* Connects to an **EC2 server via SSH**
-* Deploys application files using **rsync**
-* Creates **timestamped releases** inside `/opt/app/releases`
-* Updates a `current` symlink to point to the latest release
-* Ensures **atomic deployments** (no partial or broken deployments)
+The project demonstrates real-world DevOps practices including automated builds, atomic deployments, process management, and reverse proxy configuration.
 
 ---
 
-## 🧠 Why this approach is used
+# 📌 Project Objective
 
-This deployment strategy is widely used in real systems because:
+To design and implement a fully automated CI/CD pipeline that:
 
-* Deployments are fully **automated and repeatable**
-* Each deployment is stored as a separate release (easy rollback)
-* The `current` symlink switch is atomic and safe
-* SSH credentials are handled securely using **GitHub Secrets**
-* No manual server access is required after initial setup
+* Deploys automatically on push to the `main` branch
+* Builds the Next.js application inside GitHub Actions (CI environment)
+* Transfers production-ready build artifacts to EC2
+* Uses versioned releases for safe deployments
+* Switches deployments atomically using a `current` symlink
+* Manages the app process with PM2
+* Serves traffic through Nginx reverse proxy
 
 ---
 
-## 📁 Server directory structure
+# 🏗️ Architecture Overview
 
-On the EC2 server, deployments follow this structure:
-
-```bash
-/opt/app
-├── releases/
-│   ├── 2026.02.10_172435/
-│   ├── 2026.02.10_180012/
-│   └── ...
-└── current -> /opt/app/releases/2026.02.10_180012
+```
+Developer Push → GitHub Repository
+                     ↓
+              GitHub Actions (CI)
+                     ↓
+            Install Dependencies
+                     ↓
+               Build Next.js
+                     ↓
+          Create Timestamped Release
+                     ↓
+             Rsync Files to EC2
+                     ↓
+          Update "current" Symlink
+                     ↓
+                Restart via PM2
+                     ↓
+                Nginx Reverse Proxy
+                     ↓
+                     Users
 ```
 
-* Each deployment creates a new timestamped directory
-* The `current` symlink always points to the active version.
+---
+
+# ⚙️ Technologies Used
+
+* GitHub Actions (CI/CD)
+* Next.js
+* Node.js
+* rsync
+* SSH (Key-based authentication)
+* PM2 (Node.js process manager)
+* Nginx (Reverse proxy)
+* AWS EC2 (Ubuntu)
+* Linux system administration
 
 ---
 
-## 🔐 Authentication and security
+# 🔐 Secure Authentication Setup
 
-* SSH key pair is generated locally
-* The **public key** is added to the EC2 server (`~/.ssh/authorized_keys`)
-* The **private key** is stored securely in GitHub Actions secrets
+Authentication is handled using SSH key-based authentication.
 
-Secrets used in GitHub Actions:
+### Key Setup Process
+
+1. SSH key pair generated locally.
+2. Public key added to EC2 server:
+
+   ```bash
+   ~/.ssh/authorized_keys
+   ```
+3. Private key stored securely in GitHub repository secrets.
+
+### GitHub Secrets Used
 
 * `EC2_SSH_KEY`
 * `EC2_HOST`
 * `EC2_USER`
 
-The private key never exists on the EC2 server.
+The private key never exists on the production server.
 
 ---
 
-## ⚙️ Technologies used
+# 📂 Server Directory Structure
 
-* GitHub Actions
-* SSH
-* rsync
-* Linux (EC2 / VPS)
-* Next.js
-* Git & GitHub
+All deployments follow a release-based structure:
 
----
+```
+/var/www/app
+├── releases/
+│   ├── 20260213063542/
+│   ├── 20260214081210/
+│   └── ...
+└── current -> /var/www/app/releases/20260214081210
+```
 
-## 📌 Current scope
+### Deployment Behavior
 
-* This repository focuses only on **deployment automation**
-* Application runtime (PM2, Docker, Nginx, etc.) is intentionally not included
-* Designed as a learning and reference project for CI/CD fundamentals
+* Every deployment creates a new timestamped release folder.
+* The `current` symlink is updated to point to the newest release.
+* The application is restarted using PM2.
 
----
-
-## 🔜 Possible future improvements
-
-* Add Next.js build steps
-* Add PM2 or Docker for application runtime
-* Add rollback support
-* Automatically clean up old releases
-* Add environment variable management
+This approach ensures atomic deployments and enables easy rollback.
 
 ---
 
-## ✍️ Author
+# 🚀 Deployment Flow Explained
 
-Built as part of a hands-on DevOps learning journey.
+## 1️⃣ Code Push
+
+A push to the `main` branch triggers the GitHub Actions workflow.
+
+## 2️⃣ Build Phase (CI Environment)
+
+Inside GitHub runner:
+
+```bash
+npm install
+npm run build
+```
+
+The production-ready `.next` build is generated in CI, not on EC2.
+
+## 3️⃣ Release Creation
+
+A new release directory is created on EC2:
+
+```bash
+/var/www/app/releases/<timestamp>
+```
+
+## 4️⃣ File Synchronization
+
+Built files are transferred using `rsync`.
+
+## 5️⃣ Activation
+
+The `current` symlink is updated:
+
+```bash
+ln -sfn /var/www/app/releases/<timestamp> /var/www/app/current
+```
+
+## 6️⃣ Process Restart
+
+```bash
+pm2 restart myapp
+```
+
+Nginx continues routing traffic to the running application.
+
+---
+
+# 🛠️ Key Production Decisions
+
+## ✅ Build in CI (Not on EC2)
+
+Building on small EC2 instances can cause memory crashes (Exit code 137 / OOM).
+
+By building inside GitHub Actions:
+
+* Server memory usage is minimized
+* Deployments are more stable
+* Production server remains lightweight
+
+## ✅ Atomic Deployments
+
+Using a symlink-based deployment strategy ensures:
+
+* No partial deployments
+* Safe version switching
+* Reduced downtime
+* Easy rollback capability
+
+## ✅ PM2 for Process Management
+
+PM2 ensures:
+
+* Application stays running
+* Automatic restarts on crash
+* Startup on server reboot
+
+---
+
+# 🔄 First-Time EC2 Setup Commands
+
+Run once on the server:
+
+```bash
+pm2 start npm --name myapp -- start
+pm2 save
+pm2 startup
+sudo systemctl restart nginx
+```
+
+This ensures the application auto-starts after reboot.
+
+---
+
+# 🧠 Challenges Solved During Implementation
+
+This project involved debugging and resolving:
+
+* Invalid GitHub Actions YAML structure
+* SSH authentication failures
+* GitHub Secrets misconfiguration
+* EC2 memory crash (Exit code 137 / OOM)
+* 502 Bad Gateway (Nginx → app not running)
+* Missing build artifacts during rsync
+* PM2 process initialization errors
+
+Each issue was analyzed and resolved using systematic troubleshooting.
+
+---
+
+# 📈 Skills Demonstrated
+
+* CI/CD pipeline design
+* Production deployment strategy
+* Linux server administration
+* SSH key management
+* Reverse proxy configuration
+* Memory and resource troubleshooting
+* Debugging runtime and deployment errors
+* Atomic release architecture
+
+---
+
+# 🔮 Future Improvements
+
+* Automatic cleanup of old releases
+* One-command rollback to previous release
+* Zero-downtime reload strategy
+* Health checks before activation
+* Docker-based deployment pipeline
+* Monitoring and centralized logging
+
+---
+
+# 👨‍💻 Author
+
+Built as part of a hands-on DevOps learning journey focused on mastering CI/CD pipelines and production-ready deployment practices.
