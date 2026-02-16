@@ -166,55 +166,75 @@ function HeroSection() {
       className="min-h-screen flex items-center justify-center relative px-4"
     >
       <div
-        className={`text-center transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        className={`w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
       >
-        {/* Terminal Command */}
-        <div className="font-mono text-primary mb-6 text-sm md:text-base">
-          <span className="text-muted-foreground">$</span> usman --status
+        {/* Left Content */}
+        <div className="flex flex-col justify-center">
+          {/* Terminal Command */}
+          <div className="font-mono text-primary mb-6 text-sm md:text-base">
+            <span className="text-muted-foreground">$</span> usman --status
+          </div>
+
+          {/* Name */}
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-tight">
+            <span className="text-gradient">USMAN</span>{" "}
+            <span className="text-foreground">SIDDIQUE</span>
+          </h1>
+
+          {/* Tagline with Typing Effect */}
+          <div className="text-lg md:text-xl text-muted-foreground mb-8 h-8">
+            <TypingText
+              text="Junior DevOps Engineer | Building, Deploying, Scaling"
+              delay={500}
+            />
+          </div>
+
+          {/* Terminal Output */}
+          <div className="font-mono text-sm text-muted-foreground mb-10 space-y-1">
+            <p>
+              <span className="text-primary">{">"}</span> status:{" "}
+              <span className="text-secondary">available for hire</span>
+            </p>
+            <p>
+              <span className="text-primary">{">"}</span> location:{" "}
+              <span className="text-secondary">ready to deploy</span>
+            </p>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <a
+              href="mailto:contact@myselfusman.com"
+              className="group relative px-8 py-3 font-semibold text-lg text-primary border-2 border-primary rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/50 hover:scale-105 active:scale-95"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <Mail className="w-5 h-5" />
+                Hire Me
+              </span>
+              <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-300" />
+            </a>
+            <a
+              href="#"
+              className="group relative px-8 py-3 font-semibold text-lg text-secondary border-2 border-secondary rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-secondary/50 hover:scale-105 active:scale-95"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Download Resume
+              </span>
+              <div className="absolute inset-0 bg-secondary/0 group-hover:bg-secondary/10 transition-colors duration-300" />
+            </a>
+          </div>
         </div>
 
-        {/* Name */}
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-4 tracking-tight">
-          <span className="text-gradient">USMAN</span>{" "}
-          <span className="text-foreground">SIDDIQUE</span>
-        </h1>
-
-        {/* Tagline with Typing Effect */}
-        <div className="text-xl md:text-2xl text-muted-foreground mb-8 h-8">
-          <TypingText
-            text="Junior DevOps Engineer | Building, Deploying, Scaling"
-            delay={500}
-          />
-        </div>
-
-        {/* Terminal Output */}
-        <div className="font-mono text-sm text-muted-foreground mb-10 space-y-1">
-          <p>
-            <span className="text-primary">{">"}</span> status:{" "}
-            <span className="text-secondary">available for hire</span>
-          </p>
-          <p>
-            <span className="text-primary">{">"}</span> location:{" "}
-            <span className="text-secondary">ready to deploy</span>
-          </p>
-        </div>
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a
-            href="mailto:contact@myselfusman.com"
-            className="px-8 py-4 bg-gradient-to-r from-primary/80 via-secondary/70 to-primary/80 text-primary-foreground font-bold rounded-lg hover:from-primary hover:via-secondary hover:to-primary transition-all duration-300 flex items-center gap-2 text-lg shadow-lg hover:shadow-primary/30"
-          >
-            <Mail className="w-5 h-5" />
-            Hire Me
-          </a>
-          <a
-            href="#"
-            className="px-8 py-4 border-2 border-secondary text-secondary font-bold rounded-lg hover:bg-secondary hover:text-secondary-foreground transition-all duration-300 flex items-center gap-2 text-lg"
-          >
-            <Download className="w-5 h-5" />
-            Download Resume
-          </a>
+        {/* Right Content - Image */}
+        <div className="flex justify-center items-center w-full px-4 sm:px-0">
+          <div className="w-full max-w-sm">
+            <img
+              src="/usman-bg.webp"
+              alt="Usman Siddique - DevOps Engineer"
+              className="w-full h-auto"
+            />
+          </div>
         </div>
 
         {/* Scroll Indicator */}
@@ -379,6 +399,13 @@ function SkillsSection() {
 
 // Projects Section
 const projects = [
+  {
+    title: "Production CI/CD Deployment – Next.js on AWS EC2",
+    description:
+      "Designed and implemented a production-style CI/CD pipeline to deploy a Next.js application to AWS EC2 using GitHub Actions. Implemented atomic release strategy with versioned folders, automated deployments on push to main, configured Nginx as reverse proxy, and successfully troubleshooted real production issues including OOM crashes, SSH authentication failures, and 502 Bad Gateway errors.",
+    tech: ["GitHub Actions", "Next.js", "AWS EC2", "Nginx", "PM2", "rsync", "Linux"],
+    github: "https://github.com/myselfusman",
+  },
   {
     title: "Next.js Web App Deployment",
     description:
